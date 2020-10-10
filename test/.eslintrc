@@ -1,0 +1,19 @@
+{
+  "env": {
+    "mocha": true,
+    "es6": true
+  },
+  "globals": {
+    "assert": true,
+    "expect": true,
+    "should": true,
+    "__static": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "ecmaFeatures": {
+      "jsx": true,
+      "generators": true
+    }
+  }
+}
