@@ -59,6 +59,7 @@
   "dependencies": {
     "dateformat": "^3.0.3",
     "element-ui": "^2.13.2",
+    "request": "^2.88.2",
     "sqlite3": "^5.0.0",
     "vue": "^2.5.16",
     "vue-baidu-map": "^0.21.22",

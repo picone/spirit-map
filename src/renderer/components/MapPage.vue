@@ -21,31 +21,24 @@
         </div>
         <el-row>
           <el-col :span="8">
-            <el-button :disabled="!(this.$store.state.Spirit.scanPath.length === 0 && !this.$store.state.Spirit.isSearching)" @click="newPolyline">
-              {{ this.spirit.isEditing ? '停止框选': '开始框选' }}
+            <el-button :disabled="this.$store.state.Spirit.isSearching" @click="newPolyline">
+              {{ spirit.isEditing ? '停止框选': '开始框选' }}
             </el-button>
           </el-col>
           <el-col :span="8">
-            <el-button :disabled="this.$store.state.Spirit.scanPath.length === 0 && !this.$store.state.Spirit.isSearching" @click="clearPolyline">清空区域</el-button>
+            <el-button :disabled="spirit.path.length === 0 || this.$store.state.Spirit.isSearching" @click="clearPolyline">清空区域</el-button>
           </el-col>
           <el-col :span="8">
-            <el-button :disabled="this.spirit.isEditing || this.spirit.path.length < 3" @click="spiritSearch">
-              {{ this.$store.state.Spirit.isSearching ? '暂停搜索': '开始搜索' }}
+            <el-button :disabled="spirit.isEditing || spirit.path.length < 3" @click="spiritSearch">
+              {{ this.$store.state.Spirit.isSearching ? '停止搜索': '开始搜索' }}
             </el-button>
           </el-col>
         </el-row>
-        <el-progress
-            style="padding: 10px 0"
-            :text-inside="true"
-            :stroke-width="24"
-            :percentage="$store.getters['Spirit/curPercent']"
-            status="success">
-        </el-progress>
       </el-card>
       <el-card class="box-card" shadow="hover">
         <div slot="header" class="clearfix">
           <span>查找人</span>
-          <el-button style="float: right; padding: 3px 0" type="text" @click="searchUser">搜索</el-button>
+          <el-button :disabled="$store.state.Spirit.isSearching" style="float: right; padding: 3px 0" type="text" @click="searchUser">搜索</el-button>
         </div>
         <el-input v-model="search.username" placeholder="名字" clearable></el-input>
         <el-table
@@ -166,26 +159,27 @@ export default {
      * 清空搜索区域按钮点击，并停止搜索
      */
     clearPolyline () {
-      this.$store.dispatch('Spirit/stopScan')
       this.spirit.path = []
-      this.spirit.isEditing = false
     },
     /**
      * 搜索区域按钮点击
      */
     spiritSearch () {
-      if (this.$store.state.Spirit.scanPath.length === 0) {
-        this.spirit.path.push(this.spirit.path[0])
-        this.$store.dispatch('Spirit/startScan', {path: this.spirit.path})
+      if (this.$store.state.Spirit.isSearching) {
+        this.$store.dispatch('Spirit/stopScan')
       } else {
-        this.$store.dispatch('Spirit/toggleScan')
+        this.$store.dispatch('Spirit/startScan', {path: this.spirit.path})
       }
     },
     /**
      * 搜索用户按钮点击
      */
     searchUser () {
-      this.$store.dispatch('Searcher/search', {username: this.search.username})
+      this.$store.dispatch('Searcher/search', {username: this.search.username}).then((resultList) => {
+        if (resultList.length < 100) {
+          this.spirit.pointSize = 'BMAP_POINT_SIZE_HUGE'
+        }
+      })
     },
     onPointClick (e) {
       this.dialog.data = [
@@ -212,6 +206,9 @@ export default {
       this.$router.push('/setting')
     },
     onMapZoom (e) {
+      if (this.$store.state.Searcher.resultList.length < 100) {
+        return
+      }
       if (e.target.getZoom() <= 10) {
         this.spirit.pointSize = 'BMAP_POINT_SIZE_TINY'
       } else if (e.target.getZoom() <= 11) {

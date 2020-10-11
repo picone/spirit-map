@@ -1,5 +1,6 @@
 import { app } from 'electron'
 import { DB_FILE, USER_DATA_PATH } from '../../config'
+import { TABLE_FIGHTS } from './dao'
 const path = require('path')
 
 const sqlite3 = require('sqlite3').verbose()
@@ -7,6 +8,7 @@ const sqlite3 = require('sqlite3').verbose()
 class DB {
   constructor () {
     this.db = new sqlite3.Database(this.getDBFilename())
+    this.execute(`CREATE TABLE IF NOT EXISTS ${TABLE_FIGHTS}(lng INTEGER NOT NULL ON CONFLICT ROLLBACK, lat INTEGER NOT NULL ON CONFLICT ROLLBACK, name STRING (255) NOT NULL ON CONFLICT ROLLBACK, update_time INTEGER NOT NULL ON CONFLICT ROLLBACK, PRIMARY KEY (lng, lat))`)
   }
 
   static getInstance () {

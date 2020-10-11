@@ -34,22 +34,34 @@ const getters = {
 const mutations = {
   UPDATE_RESULT_LIST (state, { resultList }) {
     state.resultList = resultList
+  },
+  EXPAND_RESULT_LIST (state, { resultList }) {
+    state.resultList.apply(state.resultList, resultList)
   }
 }
 
 const actions = {
-  search ({ state, commit }, { username }) {
-    getFights(username, rows => {
-      let resultList = rows.map(row => {
-        let bdPoint = mars2bd(floatPoint(row))
-        row.lng = bdPoint.lng
-        row.lat = bdPoint.lat
-        return row
+  search ({ commit }, { username }) {
+    return new Promise((resolve, reject) => {
+      getFights(username, rows => {
+        let resultList = rows.map(row => {
+          let bdPoint = mars2bd(floatPoint(row))
+          row.lng = bdPoint.lng
+          row.lat = bdPoint.lat
+          return row
+        })
+        commit('UPDATE_RESULT_LIST', {resultList})
+        resolve(resultList)
+      }, (err) => {
+        reject(err)
       })
-      commit('UPDATE_RESULT_LIST', {resultList})
-    }, (err) => {
-      console.log(err)
     })
+  },
+  clear ({ commit }) {
+    commit('UPDATE_RESULT_LIST', {resultList: []})
+  },
+  expand ({ commit }, { resultList }) {
+
   }
 }
 

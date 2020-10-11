@@ -1,6 +1,6 @@
 import getDB from './persistence'
 
-const TABLE_FIGHTS = 'fights'
+export const TABLE_FIGHTS = 'fights'
 
 export function getFights (name, success, error) {
   let sql = `SELECT * FROM ${TABLE_FIGHTS}`

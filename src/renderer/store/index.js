@@ -9,12 +9,8 @@ export default new Vuex.Store({
   modules,
   plugins: process.env.IS_WEB ? [] : [
     createPersistedState({
-      blacklist: [
-        'Spirit/INCR_PROGRESS',
-        'Spirit/PAUSE_SCAN',
-        'Spirit/RESUME_SCAN',
-        'Spirit/SET_SCAN',
-        'Searcher/UPDATE_RESULT_LIST'
+      whitelist: [
+        'Spirit/SET_AUTH'
       ]
     }),
     createSharedMutations()

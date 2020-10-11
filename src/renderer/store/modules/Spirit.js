@@ -3,8 +3,6 @@ import { intPoint, pointInPath } from '../../../main/modules/spirit/pointTransfo
 import { onSearchError, searchByPoly } from '../../../main/modules/spirit/crawler'
 
 const state = {
-  progressMax: 0,
-  progressCur: 0,
   /**
    * isSearching = false, scanPath.length = 0 停止
    * isSearching = false, scanPath.length > 0 暂停
@@ -14,24 +12,17 @@ const state = {
   scanPath: [], // 扫描路径
   pointGenerator: null, // 下一个点生成器
   openid: '', // 抓取的账号
-  gwgoToken: '' // 抓取的账号token
+  gwgoToken: '', // 抓取的账号token
+  eiiku_user: 'evenx',
+  eiiku_token: 'bQD593ACLmeYO7HGjdFdX%25252F%25252F6gJELeGVf4kMw1A2XLLTEAZaWDHOtRzqsAbHTVxaNx5cUS5IAbN%25252FGbFf02d7gT7DP2fGIgymZIY58NwmGuY1imtt3OoEZwnSBItvzw02m%252BJ8WYDyJR0kgTOiB'
 }
 
 const mutations = {
-  INCR_PROGRESS (state) {
-    state.progressCur += 1
-  },
-  PAUSE_SCAN (state) {
-    state.isSearching = false
-  },
-  RESUME_SCAN (state) {
-    state.isSearch = true
-  },
   SET_SCAN (state, { isSearching, path }) {
-    state.progress_cur = 0
-    state.progress_max = 0
     state.isSearching = isSearching
-    state.scanPath = path
+    if (path.length > 0) {
+      state.scanPath = path
+    }
     state.pointGenerator = null
     if (isSearching) {
       let path = state.scanPath.map(point => {
@@ -48,8 +39,6 @@ const mutations = {
         minLat = Math.min(minLat, point.lat)
         minLng = Math.min(minLng, point.lng)
       })
-      // 计算大致会有多少个点，用于进度条
-      state.progressMax = Math.ceil((maxLat - minLat) / SPIRIT_MAP_INCR) * Math.ceil((maxLng - minLng) / SPIRIT_MAP_INCR)
       state.pointGenerator = pointGenerator(maxLat, maxLng, minLat, minLng, path)
     }
   },
@@ -60,24 +49,6 @@ const mutations = {
 }
 
 const actions = {
-  /**
-   * 暂停/继续扫描
-   * @param state
-   * @param commit
-   */
-  toggleScan ({ state, commit }) {
-    console.log(state.isSearching)
-    if (state.isSearching) {
-      commit('PAUSE_SCAN')
-    } else {
-      // 原来是停止的，恢复后开始搜索
-      commit('RESUME_SCAN')
-      searchByPoly(onSearchError)
-    }
-  },
-  pauseScan ({ commit }) {
-    commit('PAUSE_SCAN')
-  },
   /**
    * 开始扫描
    * @param commit
@@ -107,22 +78,15 @@ const actions = {
    * @param openid
    * @param gwgoToken
    */
-  setAuth ({ commit }, { openid, gwgoToken }) {
+  async setAuth ({ commit }, { openid, gwgoToken }) {
     commit('SET_AUTH', {openid: openid, gwgoToken: gwgoToken})
   },
   getNextPoint ({ state, commit }) {
-    commit('INCR_PROGRESS')
     if (state.pointGenerator !== null) {
       return state.pointGenerator.next()
     } else {
       return null
     }
-  }
-}
-
-const getters = {
-  curPercent (state) {
-    return state.progressMax === 0 ? 0 : Math.round(100 * state.progressCur / state.progressMax)
   }
 }
 
@@ -140,7 +104,6 @@ function* pointGenerator (maxLat, maxLng, minLat, minLng, path) {
 export default {
   namespaced: true,
   state: state,
-  getters: getters,
   actions: actions,
   mutations: mutations
 }

@@ -2,6 +2,7 @@ import { CRAWL_URL } from '../../config'
 import { bd2mars, floatPoint, intPoint, mars2bd } from './pointTransform'
 import store from '../../../renderer/store'
 import { insertFights } from '../db/dao'
+import { getToken } from './eiikuToken'
 const W3CWebSocket = require('websocket').w3cwebsocket
 
 const ERROR = {
@@ -14,6 +15,7 @@ const ERROR = {
 Object.freeze(ERROR)
 
 let crawlTimer = null
+let retryTimes = 0
 
 /**
  *
@@ -24,14 +26,10 @@ function crawlPoint (client, point) {
   if (!store.state.Spirit.isSearching) {
     return false
   }
-  if (point.done) {
-    store.dispatch('Spirit/stopScan')
-    return false
-  }
   if (client.readyState !== client.OPEN) {
     return false
   }
-  const marsPoint = intPoint(bd2mars(floatPoint(point.value)))
+  const marsPoint = intPoint(bd2mars(floatPoint(point)))
   const params = {
     request_type: '1002',
     latitude: marsPoint.lat,
@@ -93,6 +91,13 @@ function saveDojoList (dojoList) {
   insertFights(fights)
 }
 
+function stopCrawl (client) {
+  store.dispatch('Spirit/stopScan')
+  client.close()
+  clearInterval(crawlTimer)
+  crawlTimer = null
+}
+
 export function searchByPoly (error) {
   // 创建wss client
   const client = new W3CWebSocket(CRAWL_URL)
@@ -132,17 +137,29 @@ export function searchByPoly (error) {
 
 function onTimerEvent (client) {
   store.dispatch('Spirit/getNextPoint').then(point => {
-    if (!point || !crawlPoint(client, point)) {
-      clearInterval(crawlTimer)
-      crawlTimer = null
+    if (!point || point.done || !crawlPoint(client, point.value)) {
+      stopCrawl(client)
     }
   })
 }
 
 export function onSearchError (client, errno, error) {
   console.log(errno, error)
-  store.dispatch('Spirit/pauseScan')
-  client.close()
-  clearInterval(crawlTimer)
-  crawlTimer = null
+  if (errno === ERROR.LOGIN_TIMEOUT && retryTimes < 3) {
+    retryTimes += 1
+    getToken((err) => {
+      console.log(err)
+    }, (data) => {
+      if (data && 'token' in data && 'openid' in data) {
+        store.dispatch('Spirit/setAuth', {
+          gwgoToken: data.token.substr(0, 19),
+          openid: data.openid.substr(0, 28)
+        }).then(() => {
+          store.dispatch('Spirit/startScan', {path: []})
+        })
+      }
+    })
+  } else {
+    stopCrawl(client)
+  }
 }
