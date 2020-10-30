@@ -1,4 +1,4 @@
-import { CRAWL_URL } from '../../config'
+import { CRAWL_INTERVAL, CRAWL_URL } from '../../config'
 import { bd2mars, floatPoint, intPoint, mars2bd } from './pointTransform'
 import store from '../../../renderer/store'
 import { insertFights } from '../db/dao'
@@ -15,7 +15,7 @@ const ERROR = {
 Object.freeze(ERROR)
 
 let crawlTimer = null
-let retryTimes = 0
+let nextRetryTime = 1000
 
 /**
  *
@@ -110,7 +110,7 @@ export function searchByPoly (error) {
         if (crawlTimer !== null) {
           clearInterval(crawlTimer)
         }
-        crawlTimer = setInterval(onTimerEvent, 300, client)
+        crawlTimer = setInterval(onTimerEvent, CRAWL_INTERVAL, client)
       } else if (data['tws_notify_type'] === 'close') {
         error(client, ERROR.LOST_CONNECTION)
       } else {
@@ -118,7 +118,7 @@ export function searchByPoly (error) {
       }
     } else if (typeof e.data === 'object') {
       let data = msgUnserialize(e.data)
-      if (data['retcode'] === 10004) {
+      if (data['retcode'] === 10004 || data['retcode'] === 10003) {
         // 登录过期
         error(client, ERROR.LOGIN_TIMEOUT)
       } else if (data['retcode'] === 10002) {
@@ -127,6 +127,7 @@ export function searchByPoly (error) {
       } else if (data['retcode'] === 0) {
         // 抓取成功
         saveDojoList(data['dojo_list'])
+        nextRetryTime = 1000
       } else {
         // 未知错误
         error(client, ERROR.UNKNOWN, JSON.stringify(data))
@@ -145,8 +146,8 @@ function onTimerEvent (client) {
 
 export function onSearchError (client, errno, error) {
   console.log(errno, error)
-  if (errno === ERROR.LOGIN_TIMEOUT && retryTimes < 3) {
-    retryTimes += 1
+  stopCrawl(client)
+  setTimeout(() => {
     getToken((err) => {
       console.log(err)
     }, (data) => {
@@ -159,7 +160,6 @@ export function onSearchError (client, errno, error) {
         })
       }
     })
-  } else {
-    stopCrawl(client)
-  }
+  }, nextRetryTime)
+  nextRetryTime = Math.min(2 * nextRetryTime, 1800000)
 }

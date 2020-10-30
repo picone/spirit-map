@@ -38,7 +38,7 @@
       <el-card class="box-card" shadow="hover">
         <div slot="header" class="clearfix">
           <span>查找人</span>
-          <el-button :disabled="$store.state.Spirit.isSearching" style="float: right; padding: 3px 0" type="text" @click="searchUser">搜索</el-button>
+          <el-button style="float: right; padding: 3px 0" type="text" @click="searchUser">搜索</el-button>
         </div>
         <el-input v-model="search.username" placeholder="名字" clearable></el-input>
         <el-table
@@ -68,7 +68,14 @@
         <bm-navigation anchor="BMAP_ANCHOR_TOP_RIGHT"></bm-navigation>
         <bm-city-list anchor="BMAP_ANCHOR_TOP_LEFT"></bm-city-list>
         <bm-polyline :path="spirit.path"></bm-polyline>
+        <bml-heatmap
+            v-if="this.$store.state.Searcher.outlineList.length > 0"
+            :data="this.$store.state.Searcher.outlineList"
+            :max="400"
+            :radius="20">
+        </bml-heatmap>
         <bm-point-collection
+            v-if="this.$store.state.Searcher.resultList.length > 0"
             color="red"
             :size="spirit.pointSize"
             :points="this.$store.state.Searcher.resultList"
@@ -91,7 +98,12 @@
 </template>
 
 <script>
+import { BmlHeatmap } from 'vue-baidu-map'
+
 export default {
+  components: {
+    BmlHeatmap
+  },
   data () {
     return {
       dialog: {
@@ -175,11 +187,11 @@ export default {
      * 搜索用户按钮点击
      */
     searchUser () {
-      this.$store.dispatch('Searcher/search', {username: this.search.username}).then((resultList) => {
-        if (resultList.length < 100) {
-          this.spirit.pointSize = 'BMAP_POINT_SIZE_HUGE'
-        }
-      })
+      if (this.search.username === '') {
+        this.$store.dispatch('Searcher/outline')
+      } else {
+        this.$store.dispatch('Searcher/search', {username: this.search.username})
+      }
     },
     onPointClick (e) {
       this.dialog.data = [

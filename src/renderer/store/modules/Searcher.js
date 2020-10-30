@@ -1,9 +1,10 @@
-import { getFights } from '../../../main/modules/db/dao'
+import { getFights, getFightsAggregation } from '../../../main/modules/db/dao'
 import { floatPoint, mars2bd } from '../../../main/modules/spirit/pointTransform'
 import dateFormat from 'dateformat'
 
 const state = {
-  resultList: []
+  resultList: [],
+  outlineList: []
 }
 
 const getters = {
@@ -34,9 +35,11 @@ const getters = {
 const mutations = {
   UPDATE_RESULT_LIST (state, { resultList }) {
     state.resultList = resultList
+    state.outlineList = []
   },
-  EXPAND_RESULT_LIST (state, { resultList }) {
-    state.resultList.apply(state.resultList, resultList)
+  UPDATE_OUTLINE_LIST (state, { outlineList }) {
+    state.resultList = []
+    state.outlineList = outlineList
   }
 }
 
@@ -44,17 +47,31 @@ const actions = {
   search ({ commit }, { username }) {
     return new Promise((resolve, reject) => {
       getFights(username, rows => {
+        // 局部展示
         let resultList = rows.map(row => {
           let bdPoint = mars2bd(floatPoint(row))
           row.lng = bdPoint.lng
           row.lat = bdPoint.lat
           return row
         })
-        commit('UPDATE_RESULT_LIST', {resultList})
-        resolve(resultList)
+        commit('UPDATE_RESULT_LIST', { resultList })
+        resolve(rows)
       }, (err) => {
         reject(err)
       })
+    })
+  },
+  outline ({ commit }) {
+    getFightsAggregation(rows => {
+      let outlineList = rows.map(row => {
+        let bdPoint = mars2bd(floatPoint(row))
+        row.lng = bdPoint.lng
+        row.lat = bdPoint.lat
+        return row
+      })
+      commit('UPDATE_OUTLINE_LIST', { outlineList })
+    }, err => {
+      console.log(err)
     })
   },
   clear ({ commit }) {

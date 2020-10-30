@@ -23,8 +23,7 @@ const mutations = {
     if (path.length > 0) {
       state.scanPath = path
     }
-    state.pointGenerator = null
-    if (isSearching) {
+    if (isSearching && path.length > 0) {
       let path = state.scanPath.map(point => {
         return intPoint(point)
       })
