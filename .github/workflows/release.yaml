@@ -20,11 +20,6 @@ jobs:
         with:
           node-version: 12
 
-      - name: Build/release Electron app
-        uses: samuelmeuli/action-electron-builder@v1
-        with:
-          github_token: ${{ secrets.github_token }}
-      
       - name: Cache node moudles
         uses: actions/cache@v2
         if: startsWith(runner.os, 'macOS')
@@ -33,6 +28,11 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
+
+      - name: Build/release Electron app
+        uses: samuelmeuli/action-electron-builder@v1
+        with:
+          github_token: ${{ secrets.github_token }}
 
       - name: Get npm cache directory
         if: startsWith(runner.os, 'Windows')
@@ -54,6 +54,5 @@ jobs:
         with:
           name: output
           path: |
-            build/spirit-map-*.dmg
-            build/spirit-map-*.exe
-          if-no-files-found: error
+            build/*.dmg
+            build/*.exe
